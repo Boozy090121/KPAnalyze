@@ -23,7 +23,7 @@ interface DashboardContextType {
   setFilters: (filters: any) => void;
   
   // File handling
-  handleFileUpload: (file: File) => void;
+  handleFileUpload: (files: File[]) => void;
   resetData: () => void;
 }
 
@@ -66,41 +66,67 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     departments: [] as string[]
   });
   
-  // Handle file upload
-  const handleFileUpload = async (file: File) => {
+  // Handle file upload - supports multiple files
+  const handleFileUpload = async (files: File[]) => {
     try {
       setIsProcessing(true);
       setProcessingStage('parsing');
       setProcessingProgress(0);
       setProcessingError(null);
       
-      // Simulate file processing
-      setTimeout(() => {
-        setProcessingProgress(50);
-        setProcessingStage('analyzing');
-        
-        setTimeout(() => {
-          // Simulate completion
+      // Simulate file processing with progress updates
+      let currentProgress = 0;
+      const progressInterval = setInterval(() => {
+        currentProgress += 5;
+        if (currentProgress <= 40) {
+          setProcessingProgress(currentProgress);
+        } else if (currentProgress === 45) {
+          setProcessingStage('analyzing');
+        } else if (currentProgress < 100) {
+          setProcessingProgress(currentProgress);
+        } else {
+          clearInterval(progressInterval);
           setProcessingProgress(100);
           setProcessingStage('complete');
           setIsProcessing(false);
           
-          // Set mock data
-          setRawData([
-            { id: 1, process: 'Process A', success: true, duration: 4.3 },
-            { id: 2, process: 'Process B', success: false, duration: 5.7 },
-            { id: 3, process: 'Process C', success: true, duration: 3.9 }
-          ]);
-          
-          alert('File processed successfully! (Demo data loaded)');
-        }, 1000);
-      }, 1000);
+          // Generate mock data based on number of files
+          const mockData = generateMockData(files.length * 50);
+          setRawData(mockData);
+        }
+      }, 200);
       
     } catch (error: any) {
       setProcessingError(error.message);
       setProcessingStage('error');
       setIsProcessing(false);
     }
+  };
+  
+  // Generate mock data for demonstration
+  const generateMockData = (count: number) => {
+    const processTypes = ['Type A', 'Type B', 'Type C', 'Type D'];
+    const departments = ['Dept 1', 'Dept 2', 'Dept 3'];
+    const statuses = [true, false];
+    
+    return Array.from({ length: count }, (_, i) => {
+      const processType = processTypes[Math.floor(Math.random() * processTypes.length)];
+      const department = departments[Math.floor(Math.random() * departments.length)];
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+      const duration = Math.round((2 + Math.random() * 8) * 10) / 10;
+      
+      return {
+        id: `BATCH-${1000 + i}`,
+        timestamp: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+        processType,
+        department,
+        status,
+        duration,
+        operator: `Operator ${Math.floor(Math.random() * 10) + 1}`,
+        temperature: Math.round((36 + Math.random() * 4) * 10) / 10,
+        pressure: Math.round((100 + Math.random() * 20) * 10) / 10
+      };
+    });
   };
   
   // Reset all data
